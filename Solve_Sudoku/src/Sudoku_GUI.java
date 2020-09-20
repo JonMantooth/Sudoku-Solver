@@ -12,7 +12,6 @@ import javax.swing.JTextField;
 
 public class Sudoku_GUI implements ActionListener{
 	
-	private Cell[] cells = new Cell[82];
 	private JTextField[] cellField = new JTextField[82];
 	private JFrame frame;
 	private JButton solve;
@@ -67,7 +66,6 @@ public class Sudoku_GUI implements ActionListener{
 		quadrant9.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 		
 		for (int i=1; i<=81; i++) {
-			cells[i]=new Cell(i);
 			cellField[i]=new JTextField();
 			cellField[i].setBounds((((i-1)%9)+1)*width, ((i-1)/9+1)*width, width, width);
 			//cellField[i].setBorder(BorderFactory.createLineBorder(Color.GRAY));
@@ -98,6 +96,10 @@ public class Sudoku_GUI implements ActionListener{
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		
+		Cell[] cells = new Cell[82];
+		
+		Cell thisCell;
 		int cellIndex=1;
 		int value=0;
 		int cellsSolved=0; //total cells solved. When this equals 81 puzzle has been solved
@@ -105,11 +107,32 @@ public class Sudoku_GUI implements ActionListener{
 		int squareSolveUpdated=1;
 		boolean stuck=false;
 		boolean cellUpdated;
+		Block thisRow;
+		Block thisColumn;
+		Block thisGrid;
+		int thisRowIndex;
+		int thisColumnIndex;
+		int thisGridIndex;
+		Cell secondaryCell;
 		
+		/*
+		 * Create 27 new blocks (9 rows, 9 columns, 9 grids)
+		 */
 		for (int i=1; i<=9; i++) {
 			rows[i]=new Block();
 			columns[i]=new Block();
 			grids[i]=new Block();
+		}
+		
+		/*
+		 * Create 81 new cells and move them all to a
+		 * row, column and grid
+		 */
+		for (int i=1; i<=81; i++) {
+			cells[i]=new Cell(i);
+			rows[cells[i].getRow()].addCell(cells[i],cells[i].getRowIndex());
+			columns[cells[i].getColumn()].addCell(cells[i],cells[i].getColumnIndex());
+			grids[cells[i].getGrid()].addCell(cells[i],cells[i].getGridIndex());
 		}
 		
 		/*
@@ -118,31 +141,42 @@ public class Sudoku_GUI implements ActionListener{
 		 * are input twice from same block
 		 */
 		for (int i=1; i<=81; i++) {
-				
-			if (!cellField[cellIndex].getText().isEmpty()) {
+			
+			//assign blocks and block indices for the cell
+			thisCell = cells[i];
+			thisRow=rows[thisCell.getRow()];
+			thisColumn=columns[thisCell.getColumn()];
+			thisGrid=grids[thisCell.getGrid()];
+			thisRowIndex = thisCell.getRowIndex();
+			thisColumnIndex = thisCell.getColumnIndex();
+			thisGridIndex = thisCell.getGridIndex();
+			
+			if (!cellField[i].getText().isEmpty()) {
 					
 				try {
-					value=Integer.parseInt(cellField[cellIndex].getText());	
+					value=Integer.parseInt(cellField[i].getText());	
 				}catch(Exception e1) {
-					JOptionPane.showMessageDialog(null, "The value in row " + cells[cellIndex].getRow() + " column " + cells[cellIndex].getColumn() + " is not valid. Please ensure all entries are integers between 1 and 9");
+					JOptionPane.showMessageDialog(null, "The value in row " + thisColumnIndex + " column " + thisRowIndex + " is not valid. Please ensure all entries are integers between 1 and 9");
 					return;
 				}
 					
 				if (value<1 || value>9) {
-					JOptionPane.showMessageDialog(null, "The value in row " + cells[cellIndex].getRow() + " column " + cells[cellIndex].getColumn() + " is not a valid number. Please ensure all entries are integers between 1 and 9");
+					JOptionPane.showMessageDialog(null, "The value in row " + thisColumnIndex + " column " + thisRowIndex + " is not a valid number. Please ensure all entries are integers between 1 and 9");
 					return;
 				}
-					
-				if (!rows[cells[cellIndex].getRow()].addValue(cells[cellIndex].getRowIndex(), value)) {
-					JOptionPane.showMessageDialog(null, "Row " + cells[cellIndex].getRow() + " contains multiple " + value + "s. This is not a valid Sudoku.");
+				
+				thisCell.addValue(value);
+				
+				if (!thisRow.addValue(thisRowIndex, value)) {
+					JOptionPane.showMessageDialog(null, "Row " + thisColumnIndex + " contains multiple " + value + "s. This is not a valid Sudoku.");
 					return;
 				}
-				if (!columns[cells[cellIndex].getColumn()].addValue(cells[cellIndex].getColumnIndex(), value)) {
-					JOptionPane.showMessageDialog(null, "Column " + cells[cellIndex].getColumn() + " contains multiple " + value + "s. This is not a valid Sudoku.");
+				if (!thisColumn.addValue(thisColumnIndex, value)) {
+					JOptionPane.showMessageDialog(null, "Column " + thisRowIndex + " contains multiple " + value + "s. This is not a valid Sudoku.");
 					return;
 				}
-				if (!grids[cells[cellIndex].getGrid()].addValue(cells[cellIndex].getGridIndex(), value)) {
-					JOptionPane.showMessageDialog(null, "Grid " + cells[cellIndex].getGrid() + " contains multiple " + value + "s. This is not a valid Sudoku.");
+				if (!thisGrid.addValue(thisGridIndex, value)) {
+					JOptionPane.showMessageDialog(null, "Grid " + cells[i].getGrid() + " contains multiple " + value + "s. This is not a valid Sudoku.");
 					return;
 				}
 				
@@ -151,7 +185,6 @@ public class Sudoku_GUI implements ActionListener{
 			
 			//cellField[cellIndex].setFont(new Font("Tahoma", Font.BOLD, 14));
 			//cellField[cellIndex].setText(value+"");
-			cellIndex++;
 		}
 		
 		if (cellsSolved==81) {
@@ -163,22 +196,27 @@ public class Sudoku_GUI implements ActionListener{
 		
 		while (!stuck) {
 			
-			System.out.println(cellIndex);
-			System.out.println(cellsStuck);
 			cellUpdated=false;
 			
 			if (cellIndex==82) {
 				cellIndex=1;
 			}
 			
+			//assign blocks and block indices for the cell
+			thisCell = cells[cellIndex];
+			thisRow=rows[thisCell.getRow()];
+			thisColumn=columns[thisCell.getColumn()];
+			thisGrid=grids[thisCell.getGrid()];
+			thisRowIndex = thisCell.getRowIndex();
+			thisColumnIndex = thisCell.getColumnIndex();
+			thisGridIndex = thisCell.getGridIndex();
+			
 			//JOptionPane.showMessageDialog(null, "ROW " + cellIndex + "Before \n\n"+rows[cells[cellIndex].getRow()].toString());
 			//JOptionPane.showMessageDialog(null, "COLUMN " + cellIndex + "Before \n\n"+columns[cells[cellIndex].getColumn()].toString());
 			//JOptionPane.showMessageDialog(null, "GRID " + cellIndex + "Before \n\n"+grids[cells[cellIndex].getGrid()].toString());
 	
-			cellUpdated = cells[cellIndex].doesntContain(rows[cells[cellIndex].getRow()], columns[cells[cellIndex].getColumn()], grids[cells[cellIndex].getGrid()]);
-			
-			if (cellUpdated)
-				cellsStuck=0;
+			//cellUpdated = cells[cellIndex].doesntContain(thisRow, thisColumn, thisGrid);
+
 			
 			//JOptionPane.showMessageDialog(null, "ROW " + cellIndex + "After \n\n"+rows[cells[cellIndex].getRow()].toString());
 			//JOptionPane.showMessageDialog(null, "COLUMN " + cellIndex + "After \n\n"+columns[cells[cellIndex].getColumn()].toString());
@@ -186,39 +224,61 @@ public class Sudoku_GUI implements ActionListener{
 	
 			
 			if (cellField[cellIndex].getText().isEmpty()) {
-				if (rows[cells[cellIndex].getRow()].checkCell(cells[cellIndex].getRowIndex())!=0) {
-					value=rows[cells[cellIndex].getRow()].checkCell(cells[cellIndex].getRowIndex());
-					rows[cells[cellIndex].getRow()].addValue(cells[cellIndex].getRowIndex(), value);
-					columns[cells[cellIndex].getColumn()].addValue(cells[cellIndex].getColumnIndex(), value);
-					grids[cells[cellIndex].getGrid()].addValue(cells[cellIndex].getGridIndex(), value);
+				
+				//JOptionPane.showMessageDialog(null, thisCell.getRow() + ":" + thisCell.getColumn() + "\n" + thisCell.toStringCellContains());
+				//JOptionPane.showMessageDialog(null, thisCell.getRow() + ":" + thisCell.getColumn() + "Row\n" + thisRow.toStringBlockCantContain());
+				//JOptionPane.showMessageDialog(null, thisCell.getRow() + ":" + thisCell.getColumn() + "Column\n" + thisColumn.toStringBlockCantContain());
+				//JOptionPane.showMessageDialog(null, thisCell.getRow() + ":" + thisCell.getColumn() + "Grid\n" + thisGrid.toStringBlockCantContain());
+				
+				thisRow.updateBlock();
+				thisColumn.updateBlock();
+				thisGrid.updateBlock();
+				
+				if (thisRow.checkCell(thisRowIndex) > 0) {
+					value=thisRow.checkCell(thisRowIndex);
+					thisCell.addValue(value);
+					thisRow.addValue(thisRowIndex, value);
+					thisColumn.addValue(thisColumnIndex, value);
+					thisGrid.addValue(thisGridIndex, value);
 					cellField[cellIndex].setText(value+"");
-					JOptionPane.showMessageDialog(null, "Cell " + cellIndex + " is " + value + " by row.");
-					cellsSolved++;
+					cellField[cellIndex].select(0, 1);
+					cellField[cellIndex].setSelectedTextColor(new Color(255,0,0));
 					cellsStuck=0;
-				}else if (columns[cells[cellIndex].getColumn()].checkCell(cells[cellIndex].getColumnIndex())!=0) {
-					value=columns[cells[cellIndex].getColumn()].checkCell(cells[cellIndex].getColumnIndex());
-					rows[cells[cellIndex].getRow()].addValue(cells[cellIndex].getRowIndex(), value);
-					columns[cells[cellIndex].getColumn()].addValue(cells[cellIndex].getColumnIndex(), value);
-					grids[cells[cellIndex].getGrid()].addValue(cells[cellIndex].getGridIndex(), value);
+					cellsSolved++;
+				}else if (thisColumn.checkCell(thisColumnIndex) > 0) {
+					value=thisColumn.checkCell(thisColumnIndex);
+					thisCell.addValue(value);
+					thisRow.addValue(thisRowIndex, value);
+					thisColumn.addValue(thisColumnIndex, value);
+					thisGrid.addValue(thisGridIndex, value);
 					cellField[cellIndex].setText(value+"");
-					JOptionPane.showMessageDialog(null, "Cell " + cellIndex + " is " + value + " by column.");
-					cellsSolved++;
+					cellField[cellIndex].select(0, 1);
+					cellField[cellIndex].setSelectedTextColor(new Color(255,0,0));
 					cellsStuck=0;
-				}else if (grids[cells[cellIndex].getGrid()].checkCell(cells[cellIndex].getGridIndex())!=0) {
-					value=grids[cells[cellIndex].getGrid()].checkCell(cells[cellIndex].getGridIndex());
-					rows[cells[cellIndex].getRow()].addValue(cells[cellIndex].getRowIndex(), value);
-					columns[cells[cellIndex].getColumn()].addValue(cells[cellIndex].getColumnIndex(), value);
-					grids[cells[cellIndex].getGrid()].addValue(cells[cellIndex].getGridIndex(), value);
+					cellsSolved++;
+				}else if (thisGrid.checkCell(thisGridIndex) > 0) {
+					value=thisGrid.checkCell(thisGridIndex);
+					thisCell.addValue(value);
+					thisRow.addValue(thisRowIndex, value);
+					thisColumn.addValue(thisColumnIndex, value);
+					thisGrid.addValue(thisGridIndex, value);
 					cellField[cellIndex].setText(value+"");
-					cellsSolved++;
-					JOptionPane.showMessageDialog(null, "Cell " + cellIndex + " is " + value + " by grid.");
+					cellField[cellIndex].select(0, 1);
+					cellField[cellIndex].setSelectedTextColor(new Color(255,0,0));
 					cellsStuck=0;
+					cellsSolved++;
 				}else {
-					if (!cellUpdated)
-						cellsStuck++;
+					cellsStuck++;
 				}
 				
-	}
+				cellUpdated = thisCell.wingNut(thisRow,thisColumn, cellIndex);
+				if (cellUpdated) {
+					JOptionPane.showMessageDialog(null, thisColumn.toStringBlockCantContain());
+					JOptionPane.showMessageDialog(null, thisCell.toStringCellContains());
+					cellsStuck=0;
+				}
+				
+			}
 			
 			if (cellsSolved==81) {
 				JOptionPane.showMessageDialog(null, "Sudoku has been solved!");
@@ -233,14 +293,58 @@ public class Sudoku_GUI implements ActionListener{
 					squareSolveUpdated=squareSolveUpdated*grids[i].squareSolve("Grid " + i);
 				}
 				
+				JOptionPane.showMessageDialog(null, "Cell 12 \n" + cells[12].toStringCellContains());
+				
 				if (squareSolveUpdated==0) {
 					cellsStuck=0;
 					squareSolveUpdated=1;
+					for (int i=1; i<=9; i++) {
+						if (rows[i].updateBlock())
+							JOptionPane.showMessageDialog(null, "Updated Row " + i);
+						if (columns[i].updateBlock())
+							JOptionPane.showMessageDialog(null, "Updated Column " + i);
+						if (grids[i].updateBlock())
+							JOptionPane.showMessageDialog(null, "Updated Grid " + i);
+					}
 				}else {
 					stuck=true;
+					JOptionPane.showMessageDialog(null, "On to step 4");
+					for (int i=1; i<=9;i++) {
+						secondaryCell=rows[i].secondaryBlock("row",i);
+						if (secondaryCell!=null) {
+							if (grids[secondaryCell.getGrid()].updateSecondary(secondaryCell.getSecondaryBlockValue())) {
+								cellsStuck=0;
+								stuck=false;
+							}
+						}
+						secondaryCell=columns[i].secondaryBlock("column",i);
+						if (secondaryCell!=null) {
+							if (grids[secondaryCell.getGrid()].updateSecondary(secondaryCell.getSecondaryBlockValue())) {
+								cellsStuck=0;
+								stuck=false;
+							}
+						}
+						secondaryCell=grids[i].secondaryBlock("grid",i);
+						if (secondaryCell!=null) {
+							if (secondaryCell.getSecondaryBlockType().equals("row")) {
+								if (rows[secondaryCell.getRow()].updateSecondary(secondaryCell.getSecondaryBlockValue())) {
+								cellsStuck=0;
+								stuck=false;
+								}
+							}else if (secondaryCell.getSecondaryBlockType().equals("column")) {
+								if (columns[secondaryCell.getColumn()].updateSecondary(secondaryCell.getSecondaryBlockValue())) {
+								cellsStuck=0;
+								stuck=false;
+								}
+							}
+						}
+					}
+					
+					JOptionPane.showMessageDialog(null, "Cell 12 \n" + cells[12].toStringCellContains());
 				}
 			}
-				
+			
+			
 			cellIndex++;
 		}
 		
